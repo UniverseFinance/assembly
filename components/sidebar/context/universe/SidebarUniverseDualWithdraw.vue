@@ -1,30 +1,42 @@
 <template>
   <SidebarContextRootContainer>
-    <template #title>Supply {{ symbol }}</template>
-
-    <SidebarSectionValueWithIcon label="Token Balance" center>
-      <template #icon
-        ><IconCurrency :currency="token.key" class="w-20 h-20" noHeight
-      /></template>
-      <template #value>{{ formatNumber(balance) }} {{ symbol }}</template>
-    </SidebarSectionValueWithIcon>
+    <template #title>Withdraw {{ symbol0 }} / {{ symbol1 }}</template>
 
     <div class="bg-[#C5CCE1] bg-opacity-[0.15] mt-10 p-8 h-full">
       <h3 class="text-primary-gray text-xs font-semibold mb-2.5">
-        Amount to supply
+        Amounts to withdraw
       </h3>
 
       <input-numeric
-        v-model="amount"
-        placeholder="Amount to supply"
-        :error="errors.amount.message"
+        v-model="amount0"
+        :placeholder="`${symbol0} to withdraw`"
+        :error="errors.amount0.message"
       >
-        <template v-if="!isMaxAmount" #suffix>
+        <template v-if="!isMaxAmount0" #suffix>
           <div class="absolute mt-2 top-0 right-0 mr-4">
             <button
               type="button"
               class="text-primary-blue-dark font-semibold text-sm hover:text-primary-blue-hover"
-              @click="toggle"
+              @click="toggle0"
+            >
+              Max
+            </button>
+          </div>
+        </template>
+      </input-numeric>
+
+      <input-numeric
+        v-model="amount1"
+        :placeholder="`${symbol1} to supply`"
+        class="mt-5"
+        :error="errors.amount1.message"
+      >
+        <template v-if="!isMaxAmount1" #suffix>
+          <div class="absolute mt-2 top-0 right-0 mr-4">
+            <button
+              type="button"
+              class="text-primary-blue-dark font-semibold text-sm hover:text-primary-blue-hover"
+              @click="toggle1"
             >
               Max
             </button>
@@ -39,7 +51,7 @@
           :loading="pending"
           @click="cast"
         >
-          Supply
+          Withdraw
         </ButtonCTA>
       </div>
 
@@ -72,8 +84,7 @@ import { useUniversePosition } from "~/composables/protocols/useUniversePosition
 export default defineComponent({
   components: { InputNumeric, ToggleButton, ButtonCTA, Button },
   props: {
-    vault: { type: String, required: true },
-    tokenIndex: { type: String, required: true },
+    vault: { type: String, required: true }
   },
   setup(props) {
     const { close } = useSidebar();
@@ -82,7 +93,7 @@ export default defineComponent({
     const { getTokenByKey, valInt } = useToken();
     const { getBalanceByKey, fetchBalances } = useBalances();
     const { formatNumber, formatUsdMax, formatUsd } = useFormatting();
-    const { isZero } = useBigNumber();
+    const { isZero, gt } = useBigNumber();
     const { parseSafeFloat } = useParsing();
     const {
       showPendingTransaction,
@@ -90,33 +101,72 @@ export default defineComponent({
       showConfirmedTransaction
     } = useNotification();
 
-    const { singleVaults, refreshPosition } = useUniversePosition();
+    const { dualVaults, refreshPosition } = useUniversePosition();
     const selectedVault = computed(() =>
-      singleVaults.value.find(v => v.vaultAddress === props.vault && v.tokenIndex == Number(props.tokenIndex))
+      dualVaults.value.find(v => v.vaultAddress === props.vault)
     );
+    const balance0 = computed(
+      () => selectedVault.value ? selectedVault.value.token0Deposit : '0'
+    )
+    const balance1 = computed(
+      () => selectedVault.value ? selectedVault.value.token1Deposit : '0'
+    )
 
-    const amount = ref("");
-    const amountParsed = computed(() => parseSafeFloat(amount.value));
+    const amount0 = ref("");
+    const amount1 = ref("");
+    const amount0Parsed = computed(() => parseSafeFloat(amount0.value));
+    const amount1Parsed = computed(() => parseSafeFloat(amount1.value));
 
-    const token = computed(() =>
+    const token0 = computed(() =>
       selectedVault.value
-        ? getTokenByKey(selectedVault.value.tokenSymbol.toLowerCase())
+        ? getTokenByKey(selectedVault.value.token0.symbol.toLowerCase())
         : null
     );
-    const symbol = computed(() => token.value?.symbol);
-    const decimals = computed(() => token.value?.decimals);
-    const balance = computed(() => getBalanceByKey(token.value?.key));
+    const token1 = computed(() =>
+      selectedVault.value
+        ? getTokenByKey(selectedVault.value.token1.symbol.toLowerCase())
+        : null
+    );
+    const symbol0 = computed(() => token0.value?.symbol);
+    const decimals0 = computed(() => token0.value?.decimals);
 
-    const { toggle, isMaxAmount } = useMaxAmountActive(amount, balance);
+    const symbol1 = computed(() => token1.value?.symbol);
+    const decimals1 = computed(() => token1.value?.decimals);
 
-    const { validateAmount, validateIsLoggedIn } = useValidators();
+    const { toggle: toggle0, isMaxAmount: isMaxAmount0 } = useMaxAmountActive(
+      amount0,
+      balance0
+    );
+    const { toggle: toggle1, isMaxAmount: isMaxAmount1 } = useMaxAmountActive(
+      amount1,
+      balance1
+    );
+
+    function validateAmount(symbol: string, amountParsed, balance = null, checkZero = false) {
+      const mergedOptions = { msg: `Your amount exceeds your maximum limit of ${symbol}.` }
+
+      if (checkZero && isZero(amountParsed)) {
+        return `Please provide a valid amount of ${symbol}.`;
+      } else if (balance !== null && gt(amountParsed, balance)) {
+        return mergedOptions.msg;
+      }
+
+      return null;
+    }
+
+    const {  validateIsLoggedIn } = useValidators();
     const errors = computed(() => {
-      const hasAmountValue = !isZero(amount.value);
+      const hasAmount0Value = !isZero(amount0.value);
+      const hasAmount1Value = !isZero(amount1.value);
 
       return {
-        amount: {
-          message: validateAmount(amountParsed.value, balance.value),
-          show: hasAmountValue
+        amount0: {
+          message: validateAmount(symbol0.value, amount0Parsed.value, balance0.value, !hasAmount1Value),
+          show: hasAmount0Value
+        },
+        amount1: {
+          message: validateAmount(symbol1.value, amount1Parsed.value, balance1.value, !hasAmount0Value),
+          show: hasAmount1Value
         },
         auth: { message: validateIsLoggedIn(!!account.value), show: true }
       };
@@ -128,17 +178,20 @@ export default defineComponent({
     async function cast() {
       pending.value = true;
 
-      const amount = isMaxAmount.value
+      const amount0 = isMaxAmount0.value
         ? dsa.value.maxValue
-        : valInt(amountParsed.value, decimals.value);
+        : valInt(amount0Parsed.value, decimals0.value);
+      const amount1 = isMaxAmount1.value
+        ? dsa.value.maxValue
+        : valInt(amount1Parsed.value, decimals1.value);
 
       const spells = dsa.value.Spell();
-      const amounts = Number(props.tokenIndex) == 0 ? [amount, 0] : [0, amount];
+      const amounts = [amount0, amount1];
 
       spells.add({
         //@ts-ignore
         connector: "UNIVERSE-A",
-        method: "deposit",
+        method: "withdraw",
         args: [props.vault, ...amounts, [0, 0], [0, 0]]
       });
 
@@ -169,15 +222,21 @@ export default defineComponent({
       pending,
       cast,
       errors,
-      amount,
-      token,
-      symbol,
-      balance,
       formatNumber,
       formatUsdMax,
       formatUsd,
-      toggle,
-      isMaxAmount,
+      toggle0,
+      amount0,
+      token0,
+      symbol0,
+      balance0,
+      isMaxAmount0,
+      toggle1,
+      amount1,
+      token1,
+      symbol1,
+      balance1,
+      isMaxAmount1,
       errorMessages,
       isValid
     };

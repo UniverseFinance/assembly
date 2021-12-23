@@ -22,7 +22,9 @@
             <UniverseIcon class="w-8 h-8 text-white" />
           </div>
         </div>
-        <h1 class="ml-4 text-primary-black text-2xl font-semibold">Universe Finance</h1>
+        <h1 class="ml-4 text-primary-black text-2xl font-semibold">
+          Universe Finance
+        </h1>
       </div>
     </div>
 
@@ -48,11 +50,14 @@
             </h3>
             <div class="flex mt-2">
               <p class="text-primary-gray font-medium">Total Fees Earned</p>
-              <Info class="ml-1 mt-1" text="Trading fees earned in Uniswap V3 pool, including all pools of universe.finance" />
+              <Info
+                class="ml-1 mt-1"
+                text="Trading fees earned in Uniswap V3 pool, including all pools of universe.finance"
+              />
             </div>
           </div>
         </div>
-        
+
         <div class="shadow rounded-lg py-5 px-5 flex">
           <div class="flex-1">
             <h3 class="text-2xl text-primary-black font-medium">
@@ -60,7 +65,10 @@
             </h3>
             <div class="flex mt-2">
               <p class="text-primary-gray font-medium">Total Gas Saved</p>
-              <Info class="ml-1 mt-1" text="Gas fee for rebalancing and reinvestment, including all pools of universe.finance" />
+              <Info
+                class="ml-1 mt-1"
+                text="Gas fee for rebalancing and reinvestment, including all pools of universe.finance"
+              />
             </div>
           </div>
         </div>
@@ -81,14 +89,16 @@
             <p class="mt-2 text-primary-gray font-medium">Your Rewards</p>
           </div>
         </div>
-      </div> 
+      </div>
     </div>
 
     <div class="mt-[60px]">
       <div
         class="w-full flex flex-col mt-6 sm:flex-row sm:items-center sm:justify-between xl:mt-4"
       >
-        <h2 class="text-primary-gray text-lg font-semibold">Your Positions</h2>
+        <h2 class="text-primary-gray text-lg font-semibold">
+          Your Single Positions
+        </h2>
 
         <div class="mt-4 sm:mt-0 sm:mr-1">
           <SearchInput
@@ -119,6 +129,46 @@
         </div>
       </div>
     </div>
+    <div class="mt-[60px]">
+      <div
+        class="w-full flex flex-col mt-6 sm:flex-row sm:items-center sm:justify-between xl:mt-4"
+      >
+        <h2 class="text-primary-gray text-lg font-semibold">
+          Your Dual Positions
+        </h2>
+
+        <div class="mt-4 sm:mt-0 sm:mr-1">
+          <SearchInput
+            v-model.trim="search"
+            dense
+            class="w-[200px]"
+            placeholder="Search positions"
+          />
+        </div>
+      </div>
+      <div
+        class="mt-3 grid w-full grid-cols-1 gap-4 sm:grid-cols-1 xxl:gap-6 min-w-max-content px-1"
+      >
+        <div v-for="item in dualVaults" :key="item.symbol">
+          <card-dual-universe
+            :vault-name="item.vaultName"
+            :vault="item.vaultAddress"
+            :token0-key="item.token0.symbol.toLowerCase()"
+            :token1-key="item.token1.symbol.toLowerCase()"
+            :token0-supply="item.token0Deposit"
+            :token0-supply-usd="item.token0DepositInUsd"
+            :token1-supply="item.token1Deposit"
+            :token1-supply-usd="item.token1DepositInUsd"
+            :type="item.type"
+            :price0-in-usd="item.price0"
+            :price1-in-usd="item.price1"
+            :feeAprLifetime="item.feeAprLifetime"
+            :untReward="Number(item.untReward)"
+            :link="item.link"
+          />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -130,6 +180,7 @@ import { useUniverseOverview } from "~/composables/protocols/useUniverseOverview
 import { useFormatting } from "~/composables/useFormatting";
 import { useSearchFilter } from "~/composables/useSearchFilter";
 import CardUniverse from "~/components/protocols/CardUniverse.vue";
+import CardDualUniverse from "~/components/protocols/CardDualUniverse.vue";
 import UniverseIcon from "~/assets/icons/universe.svg?inline";
 import ButtonCTAOutlined from "~/components/common/input/ButtonCTAOutlined.vue";
 
@@ -137,24 +188,31 @@ export default defineComponent({
   components: {
     BackIcon,
     CardUniverse,
+    CardDualUniverse,
     UniverseIcon,
-    ButtonCTAOutlined,
+    ButtonCTAOutlined
   },
   setup() {
     const { overview } = useUniverseOverview();
-    const { vaults, totalDeposit, totalUNTReward } = useUniversePosition();
+    const {
+      singleVaults,
+      dualVaults,
+      totalDeposit,
+      totalUNTReward
+    } = useUniversePosition();
 
     const { formatUsd, formatPercent, formatNumber } = useFormatting();
 
     const { filtered: filteredVaults, search } = useSearchFilter(
-      vaults,
-      "tokenSymbol",
-      // "vaultName" 
+      singleVaults,
+      "tokenSymbol"
+      // "vaultName"
     );
 
     return {
       overview,
       filteredVaults,
+      dualVaults,
       totalDeposit,
       totalUNTReward,
       search,

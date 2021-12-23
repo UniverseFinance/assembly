@@ -50,7 +50,9 @@ import SidebarYearnV2Supply from "~/components/sidebar/context/yearn-v2/SidebarY
 import SidebarYearnV2Withdraw from '~/components/sidebar/context/yearn-v2/SidebarYearnV2Withdraw.vue'
 
 import SidebarUniverseSupply from "~/components/sidebar/context/universe/SidebarUniverseSupply.vue";
+import SidebarUniverseDualSupply from "~/components/sidebar/context/universe/SidebarUniverseDualSupply.vue";
 import SidebarUniverseWithdraw from '~/components/sidebar/context/universe/SidebarUniverseWithdraw.vue'
+import SidebarUniverseDualWithdraw from "~/components/sidebar/context/universe/SidebarUniverseDualWithdraw.vue";
 
 import SidebarStrategySelection from '~/components/sidebar/context/strategy/SidebarStrategySelection.vue'
 import SidebarStrategy from '~/components/sidebar/context/strategy/SidebarStrategy.vue'
@@ -76,7 +78,9 @@ const sidebars = {
 
   "/mainnet/universe": { component: null },
   "/mainnet/universe#supply": { component: SidebarUniverseSupply },
+  "/mainnet/universe#dual-supply": { component: SidebarUniverseDualSupply },
   "/mainnet/universe#withdraw": { component: SidebarUniverseWithdraw },
+  "/mainnet/universe#dual-withdraw": { component: SidebarUniverseDualWithdraw },
 
   "/mainnet/maker": { component: null },
   '/mainnet/maker#collateral': { component: SidebarMakerdaoCollateral },

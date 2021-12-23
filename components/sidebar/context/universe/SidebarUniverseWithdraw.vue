@@ -85,9 +85,9 @@ export default defineComponent({
     const { showPendingTransaction, showConfirmedTransaction, showWarning } = useNotification()
     const { fetchBalances } = useBalances();
 
-    const { vaults, refreshPosition } = useUniversePosition();
+    const { singleVaults, refreshPosition } = useUniversePosition();
     const selectedVault = computed(() =>
-      vaults.value.find(v => v.vaultAddress === props.vault && v.tokenIndex === Number(props.tokenIndex))
+      singleVaults.value.find(v => v.vaultAddress === props.vault && v.tokenIndex === Number(props.tokenIndex))
     );
 
     const balance = computed(
